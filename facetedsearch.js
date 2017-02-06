@@ -1,7 +1,7 @@
 ;(function(){
 
 /**
- * Please note that when passing in custom templates for 
+ * Please note that when passing in custom templates for
  * listItemTemplate and orderByTemplate to keep the classes as
  * they are used in the code at other locations as well.
  */
@@ -19,9 +19,11 @@ var defaults = {
   orderByTemplate    : '<div class=orderby><span class="orderby-title">Sort by: </span><ul><% _.each(options, function(value, key) { %>'+
                        '<li class=orderbyitem id=orderby_<%= key %>>'+
                        '<%= value %> </li> <% }); %></ul></div>',
-  countTemplate      : '<div class=facettotalcount><%= count %> Results</div>',
+  countTemplate      : '<div class=facettotalcount>Results</div>',
+  // countTemplate      : '<div class=facettotalcount><%= count %> Results</div>',
   deselectTemplate   : '<div class=deselectstartover>Deselect all filters</div>',
   resultTemplate     : '<div class=facetresultbox><%= name %></div>',
+  resultTemplateBypass: null,
   noResults          : '<div class=results>Sorry, but no items match these criteria</div>',
   orderByOptions     : {'a': 'by A', 'b': 'by B', 'RANDOM': 'by random'},
   state              : {
@@ -34,7 +36,7 @@ var defaults = {
 }
 
 /**
- * This is the first function / variable that gets exported into the 
+ * This is the first function / variable that gets exported into the
  * jQuery namespace. Pass in your own settings (see above) to initialize
  * the faceted search
  */
@@ -44,15 +46,17 @@ jQuery.facetelize = function(usersettings) {
   settings.currentResults = [];
   settings.facetStore     = {};
   $(settings.facetSelector).data("settings", settings);
+  window.state = settings.state
   initFacetCount();
   filter();
   order();
-  createFacetUI();
   updateResults();
+  createFacetUI();
+  return settings.state
 }
 
 /**
- * This is the second function / variable that gets exported into the 
+ * This is the second function / variable that gets exported into the
  * jQuery namespace. Use it to update everything if you messed with
  * the settings object
  */
@@ -68,7 +72,7 @@ jQuery.facetUpdate = function() {
  */
 
 /**
- * initializes all facets and their individual filters 
+ * initializes all facets and their individual filters
  */
 function initFacetCount() {
   _.each(settings.facets, function(facettitle, facet) {
@@ -114,7 +118,7 @@ function resetFacetCount() {
 }
 
 /**
- * Filters all items from the settings according to the currently 
+ * Filters all items from the settings according to the currently
  * set filters and stores the results in the settings.currentResults.
  * The number of items in each filter from each facet is also updated
  */
@@ -124,7 +128,7 @@ function filter() {
     var filtersApply = true;
     _.each(settings.state.filters, function(filter, facet) {
       if ($.isArray(item[facet])) {
-         var inters = _.intersect(item[facet], filter);
+         var inters = _.intersection(item[facet], filter);
          if (inters.length == 0) {
            filtersApply = false;
          }
@@ -164,7 +168,7 @@ function filter() {
 
 /**
  * Orders the currentResults according to the settings.state.orderBy variable
- */ 
+ */
 function order() {
   if (settings.state.orderBy) {
     $(".activeorderby").removeClass("activeorderby");
@@ -208,7 +212,7 @@ function createFacetUI() {
   var itemtemplate  = _.template(settings.listItemTemplate);
   var titletemplate = _.template(settings.facetTitleTemplate);
   var containertemplate = _.template(settings.facetContainer);
-  
+
   $(settings.facetSelector).html("");
   _.each(settings.facets, function(facettitle, facet) {
     var facetHtml     = $(containertemplate({id: facet}));
@@ -239,7 +243,7 @@ function createFacetUI() {
   });
   // Append total result count
   var bottom = $(settings.bottomContainer);
-  countHtml = _.template(settings.countTemplate, {count: settings.currentResults.length});
+  countHtml = _.template(settings.countTemplate, {count: settings.currentResults.length || 0});
   $(bottom).append(countHtml);
   // generate the "order by" options:
   var ordertemplate = _.template(settings.orderByTemplate);
@@ -317,11 +321,15 @@ function updateResults() {
 
 var moreButton;
 function showMoreResults() {
-  var showNowCount = 
-      settings.enablePagination ? 
-      Math.min(settings.currentResults.length - settings.state.shownResults, settings.paginationCount) : 
+  var showNowCount =
+      settings.enablePagination ?
+      Math.min(settings.currentResults.length - settings.state.shownResults, settings.paginationCount) :
       settings.currentResults.length;
   var itemHtml = "";
+
+  if (settings.beforeResultRender){
+    settings.beforeResultRender()
+  }
   var template = _.template(settings.resultTemplate);
   for (var i = settings.state.shownResults; i < settings.state.shownResults + showNowCount; i++) {
     var item = $.extend(settings.currentResults[i], {
@@ -329,7 +337,12 @@ function showMoreResults() {
       batchItemNr    : i - settings.state.shownResults,
       batchItemCount : showNowCount
     });
-    var itemHtml = itemHtml + template(item);
+
+    if (settings.resultTemplateBypass){
+      settings.resultTemplateBypass(item)
+    } else {
+      var itemHtml = itemHtml + template(item);
+    }
   }
   $(settings.resultSelector).append(itemHtml);
   if (!moreButton) {
