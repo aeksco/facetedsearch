@@ -1,0 +1,19 @@
+{
+  "name": "facetedsearch",
+  "version": "1.0.0",
+  "description": "Check out the documentation and examples at [http://eikes.github.io/facetedsearch/](http://eikes.github.io/facetedsearch/)",
+  "main": "facetedsearch.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aeksco/facetedsearch.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aeksco/facetedsearch/issues"
+  },
+  "homepage": "https://github.com/aeksco/facetedsearch#readme"
+}
